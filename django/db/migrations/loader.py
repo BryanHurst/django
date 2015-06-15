@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import os
 import sys
+import pkgutil
+
 from importlib import import_module
 
 from django.apps import apps
@@ -85,14 +87,8 @@ class MigrationLoader(object):
                 if was_loaded:
                     six.moves.reload_module(module)
             self.migrated_apps.add(app_config.label)
-            directory = os.path.dirname(module.__file__)
-            # Scan for .py files
-            migration_names = set()
-            for name in os.listdir(directory):
-                if name.endswith(".py"):
-                    import_name = name.rsplit(".", 1)[0]
-                    if import_name[0] not in "_.~":
-                        migration_names.add(import_name)
+            # Scan for migrations
+            migration_names = set([name for _, name, is_pkg in pkgutil.iter_modules(module.__path__) if not is_pkg])
             # Load them
             south_style_migrations = False
             for migration_name in migration_names:
